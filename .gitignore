@@ -1,0 +1,44 @@
+# VS Code settings
+.vscode/
+
+# clangd index & cache
+.cache/
+.clangd/
+clangd/
+compile_commands.json
+
+# Build artifacts
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.a
+*.lib
+*.exe
+*.out
+*.app
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build/
+
+# Ninja files
+build.ninja
+.ninja_log
+.ninja_deps
+
+# Backup & log files
+*~
+*.log
+*.tmp
+*.swp
+*.swo
+
+# vcpkg related (optional)
+vcpkg_installed/
+vcpkg/buildtrees/
+vcpkg/packages/
