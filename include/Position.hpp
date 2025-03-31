@@ -13,7 +13,9 @@ public:
 
 namespace std {
 template <> struct hash<Position> {
-  size_t operator()(const Position &p) const;
+  inline size_t operator()(const Position &p) const {
+    return hash<int>()(p.x) ^ (hash<int>()(p.y) << 1);
+  }
 };
 } // namespace std
 

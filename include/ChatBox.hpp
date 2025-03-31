@@ -1,19 +1,35 @@
-#include "ChatLine.hpp"
+#ifndef CHATBOX_HPP
+#define CHATBOX_HPP
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+
+#include <string>
 #include <vector>
+
+struct ChatMessage {
+  std::string text;
+  SDL_Color color;
+
+  ChatMessage(const std::string &msg, SDL_Color clr) : text(msg), color(clr) {}
+};
 
 class ChatBox {
 public:
-  ChatBox(int max_lines);   
+  ChatBox(int x, int y, int w, int h);
+  ~ChatBox();
+  void setFont(TTF_Font *font);
+  void addMessage(const std::string &message,
+                  SDL_Color color = {255, 255, 255, 255});
   void render(SDL_Renderer *renderer);
-  void addLine(const std::string &text, SDL_Color color);
-  void scroll(int offset);
-  void handleInput(SDL_Event &e);
-  void clear();
 
-  std::vector<ChatLine> chat_history;
-  std::string input_buffer;
-  int scroll_offset = 0;
-  int max_lines;
+  // Add method to update the position and size
+  void setRect(const SDL_Rect &newRect);
 
 private:
+  SDL_Rect rect;                     // Position and size of the chat box
+  std::vector<ChatMessage> messages; // Text messages to display
+  TTF_Font *font;                    // Font used for rendering text
 };
+
+#endif

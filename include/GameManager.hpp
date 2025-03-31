@@ -1,27 +1,22 @@
-// GameManager.hpp
-#ifndef GAME_MANAGER_HPP
-#define GAME_MANAGER_HPP
-
-#include "Window.hpp"
+// === GameManager.hpp ===
+#pragma once
 #include "Game.hpp"
+#include <SDL2/SDL.h>
+#include <memory>
 
 class GameManager {
 public:
-    GameManager();
-    ~GameManager();
+  GameManager();
+  ~GameManager();
 
-    bool init();
-    void run();
-    void clean();
+  void init();
+  void run();
+  void clean();
 
 private:
-    Window window;
-    Game* game = nullptr;
-    bool isRunning = false;
-
-    void handleEvents();
-    void update();
-    void render();
+  SDL_Window *window;
+  SDL_Renderer *renderer;
+  std::unique_ptr<Game> game;
+  bool running;
+  bool cleaned; // Track if cleanup has been performed
 };
-
-#endif
