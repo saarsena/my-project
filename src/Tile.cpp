@@ -1,6 +1,6 @@
 #include "Tile.hpp"
 
-const int TILE_SIZE = 8; // Example tile size
+const int TILE_SIZE = 16;
 
 Tile::Tile(int x, int y, SDL_Texture *texture) : x(x), y(y), texture(texture) {}
 

@@ -15,7 +15,7 @@ struct ChatMessage {
 };
 
 class ChatBox {
-public:
+ public:
   ChatBox(int x, int y, int w, int h);
   ~ChatBox();
   void setFont(TTF_Font *font);
@@ -26,10 +26,10 @@ public:
   // Add method to update the position and size
   void setRect(const SDL_Rect &newRect);
 
-private:
-  SDL_Rect rect;                     // Position and size of the chat box
-  std::vector<ChatMessage> messages; // Text messages to display
-  TTF_Font *font;                    // Font used for rendering text
+ private:
+  SDL_Rect rect;                      // Position and size of the chat box
+  std::vector<ChatMessage> messages;  // Text messages to display
+  TTF_Font *font;                     // Font used for rendering text
 };
 
 #endif

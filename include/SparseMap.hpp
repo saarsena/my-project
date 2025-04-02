@@ -3,6 +3,7 @@
 #define SPARSEMAP_H
 
 #include <unordered_map>
+
 #include "Position.hpp"
 
 class SparseMap {

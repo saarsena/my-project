@@ -24,6 +24,17 @@ file(GLOB SRC_FILES
 # Explicitly add walkerdungeon.cpp in case it's not picked up by GLOB
 set(SRC_FILES ${SRC_FILES} ${CMAKE_SOURCE_DIR}/src/walkerdungeon.cpp)
 
+# Add source files
+set(SOURCES
+    src/main.cpp
+    src/Game.cpp
+    src/GameManager.cpp
+    src/TileMap.cpp
+    src/TileSet.cpp
+    src/ChatBox.cpp
+    src/Camera.cpp
+)
+
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 target_link_libraries(${PROJECT_NAME}

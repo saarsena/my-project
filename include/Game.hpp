@@ -2,18 +2,18 @@
 #pragma once
 #include <queue>
 
+#include "Camera.hpp"
 #include "ChatBox.hpp"
 #include "Entity.hpp"
+#include "GameConfig.hpp"
 #include "TileMap.hpp"
 #include "TileSet.hpp"
 #include "walkerdungeon.hpp"
 
+class Player;
+
 class Game {
 public:
-  // Define constants at the start of the class
-  static const int SCREEN_WIDTH = 800;
-  static const int SCREEN_HEIGHT = 600;
-
   Game(SDL_Renderer *renderer);
   ~Game();
   void tick();
@@ -24,6 +24,10 @@ public:
   // Check if the game is still running
   bool isRunning() const { return running; }
 
+  // Made public for Entity access
+  bool isValidMove(int newX, int newY) const;
+  int getCurrentTick() const { return tickCount; }
+
 private:
   void loadArena();
   void generateDungeon();
@@ -31,7 +35,6 @@ private:
                  SDL_Color background);
   int glyphToTileID(char c);
   void flavorText(const char *str, SDL_Rect &tRV);
-  bool isValidMove(int newX, int newY) const;
 
   SDL_Renderer *renderer;
   TTF_Font *gFont; // Font used for rendering text
@@ -39,7 +42,10 @@ private:
   TileSet tiles;
   TileMap map;
   WalkerDungeon dungeon;
-  Entity player, enemy, ssoyWielder;
+  Camera camera;
+  Player *player; // Updated to Player pointer
+  Entity enemy;
+  Entity ssoyWielder;
   int tickCount = 0;
   bool running = true;
 

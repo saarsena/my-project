@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include "ChatBox.hpp"
+#include "Player.hpp"
 #include "TileMap.hpp"
 #include "TileSet.hpp"
 
@@ -22,8 +23,11 @@ SDL_Color colorBlue = {38, 139, 210, 255};   // Blue for player attacks
 
 Game::Game(SDL_Renderer *renderer)
     : renderer(renderer),
-      chatBox(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2),
-      map(64, 64), dungeon(500, 3, 10, 3), gFont(nullptr) {
+      chatBox(0, GameConfig::GAME_AREA_HEIGHT, GameConfig::SCREEN_WIDTH,
+              GameConfig::SCREEN_HEIGHT - GameConfig::GAME_AREA_HEIGHT),
+      map(64, 64), dungeon(500, 3, 10, 3),
+      camera(GameConfig::GAME_AREA_WIDTH, GameConfig::GAME_AREA_HEIGHT),
+      gFont(nullptr) {
   std::cout << "Game: Constructor started, TTF initialized: " << TTF_WasInit()
             << std::endl;
   tiles.loadDefaults();
@@ -69,13 +73,20 @@ Game::Game(SDL_Renderer *renderer)
     map.setSpriteSheet(tiles.getSpriteSheet());
   }
 
-  // Create a temporary player
-  player.pos.x = 16;
-  player.pos.y = 16;
-  player.health = 100;
-  player.attackDamage = 1;
-  player.attackSpeed = 10;
-  player.name = "Player";
+  // Initial position for the player
+  int playerX = 16;
+  int playerY = 16;
+
+  // Create player instance
+  player = new Player(playerX, playerY, tiles.getSpriteSheet());
+
+  // Initialize other entities
+  enemy = Entity("Goblin", Position(0, 0), 1000, 6, 250, 30);
+  ssoyWielder = Entity("Player with SSoY", Position(0, 0), 100, 39, 70, 15);
+
+  // Initialize combat queue
+  actionQueue.push({0, &ssoyWielder});
+  actionQueue.push({0, &enemy});
 
   // Load font
   TTF_Font *font = nullptr;
@@ -125,15 +136,8 @@ Game::Game(SDL_Renderer *renderer)
   generateDungeon();
   std::cout << "Dungeon generated" << std::endl;
 
-  // Initialize entities after dungeon generation
-  enemy = {"Goblin", {}, 1000, 6, 250};
-  ssoyWielder = {"Player with SSoY", {}, 100, 39, 70};
-  actionQueue.push({0, &ssoyWielder});
-  actionQueue.push({0, &enemy});
-  std::cout << "Entities initialized" << std::endl;
-
   // Add initial messages to the chat box
-  chatBox.addMessage("Welcome to the dungeon!");
+  chatBox.addMessage("Woooohoooooo!");
   chatBox.addMessage("Use arrow keys to move.");
   chatBox.addMessage("Press 'Q' or ESC to quit.");
   chatBox.addMessage("Good luck!");
@@ -141,6 +145,10 @@ Game::Game(SDL_Renderer *renderer)
 
 Game::~Game() {
   std::cout << "Game: Starting cleanup" << std::endl;
+
+  // Delete player object
+  delete player;
+
   if (gFont) {
     std::cout << "Game: Freeing font" << std::endl;
     TTF_CloseFont(gFont);
@@ -150,6 +158,7 @@ Game::~Game() {
 }
 
 void Game::tick() {
+  // Process combat actions
   while (!actionQueue.empty() && actionQueue.top().tick <= tickCount) {
     auto next = actionQueue.top();
     actionQueue.pop();
@@ -158,7 +167,7 @@ void Game::tick() {
 
     // Add attack message
     std::string attackMsg =
-        attacker->name + " attacks " + target->name + " for ";
+        attacker->getName() + " attacks " + target->getName() + " for ";
 
     // Determine message color based on who is attacking
     if (attacker == &ssoyWielder) {
@@ -170,7 +179,8 @@ void Game::tick() {
     }
 
     // Add damage value message with colored text based on who is attacking
-    std::string damageMsg = std::to_string(attacker->attackDamage) + " damage!";
+    std::string damageMsg =
+        std::to_string(attacker->getAttackDamage()) + " damage!";
     if (attacker == &ssoyWielder) {
       // Player attacking - blue text
       chatBox.addMessage(damageMsg, colorBlue);
@@ -180,88 +190,106 @@ void Game::tick() {
     }
 
     // Process the attack logic
-    target->health -= attacker->attackDamage;
-    if (target->health <= 0) {
+    target->takeDamage(attacker->getAttackDamage());
+    if (target->getHealth() <= 0) {
       // Use yellow for defeat messages
       SDL_Color colorYellow = {255, 255, 0, 255};
-      chatBox.addMessage(target->name + " is defeated!", colorYellow);
+      chatBox.addMessage(target->getName() + " is defeated!", colorYellow);
       running = false;
       return;
     }
 
-    int nextTick = tickCount + attacker->attackSpeed;
+    int nextTick = tickCount + attacker->getAttackSpeed();
     actionQueue.push({nextTick, attacker});
   }
+
+  // Update all entities
+  player->update(this, tickCount);
+
+  // Increment tick counter
   tickCount++;
 }
 
-void Game::update() {}
+void Game::update() {
+  // Update camera to follow player using TILE_SIZE from GameConfig
+  const Position &playerPos = player->getPosition();
+  camera.update(playerPos.x * GameConfig::TILE_SIZE,
+                playerPos.y * GameConfig::TILE_SIZE,
+                map.getWidth() * GameConfig::TILE_SIZE,
+                map.getHeight() * GameConfig::TILE_SIZE);
+}
 
 void Game::render() {
-  const int padding = 2;
-
-  // Clear the entire screen with the specified background color
+  // Clear the entire screen
   SDL_SetRenderDrawColor(renderer, 0, 43, 54, 255);
   SDL_RenderClear(renderer);
 
-  // Main viewport (full screen for dungeon view)
-  SDL_Rect mainViewport = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-  drawPanel(mainViewport, padding, border[0], background[0]);
+  // Calculate dynamic sections - divide screen height into thirds
+  int totalHeight = GameConfig::SCREEN_HEIGHT;
+  int baseSectionHeight = totalHeight / 3;
+  int remainder = totalHeight % 3;
 
-  // Combat log viewport (bottom portion of the screen)
-  SDL_Rect bottomViewport = {0, SCREEN_HEIGHT - SCREEN_HEIGHT / 4, SCREEN_WIDTH,
-                             SCREEN_HEIGHT / 4};
-  drawPanel(bottomViewport, padding - 2, border[0], background[0]);
+  // Distribute heights for three equal sections (top, middle, bottom)
+  int sectionHeights[3] = {baseSectionHeight, baseSectionHeight,
+                           baseSectionHeight};
 
-  // Create an adjusted viewport for the dungeon that accounts for the border
-  SDL_Rect mapRect = {mainViewport.x + padding, mainViewport.y + padding,
-                      mainViewport.w - 2 * padding,
-                      mainViewport.h - 2 * padding};
-
-  // Set viewport for the dungeon
-  SDL_RenderSetViewport(renderer, &mapRect);
-
-  // Log the map viewport dimensions and player position
-  SDL_Log("Dungeon view: x=%d, y=%d, w=%d, h=%d, Player: (%d,%d)", mapRect.x,
-          mapRect.y, mapRect.w, mapRect.h, player.pos.x, player.pos.y);
-
-  // Render the tilemap centered on player's position
-  map.renderCentered(renderer, tiles, {0, 0, mapRect.w, mapRect.h},
-                     player.pos.x, player.pos.y);
-
-  // Display player stats as an overlay in the top-left corner of the main view
-  std::string playerInfo = "Position: (" + std::to_string(player.pos.x) + "," +
-                           std::to_string(player.pos.y) + ")   " +
-                           "Health: " + std::to_string(player.health);
-
-  // Create a small semi-transparent background for the stats text
-  SDL_Rect statsRect = {10, 10, 300, 30};
-  SDL_SetRenderDrawColor(renderer, 0, 43, 54, 180);
-  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-  SDL_RenderFillRect(renderer, &statsRect);
-  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-
-  // Render the player stats text
-  if (gFont) {
-    SDL_Color textColor = {253, 246, 227, 255};
-    SDL_Surface *surface =
-        TTF_RenderText_Solid(gFont, playerInfo.c_str(), textColor);
-    if (surface) {
-      SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-      SDL_Rect dest = {15, 15, surface->w, surface->h};
-      SDL_RenderCopy(renderer, texture, nullptr, &dest);
-      SDL_FreeSurface(surface);
-      SDL_DestroyTexture(texture);
-    }
+  // Distribute any remainder pixels to maintain exact total height
+  for (int i = 0; i < remainder; ++i) {
+    sectionHeights[i]++;
   }
 
-  // Reset viewport for the chat box rendering
-  SDL_RenderSetViewport(renderer, nullptr);
+  // Chat box takes bottom third, game area takes top two-thirds
+  int chatBoxHeight = sectionHeights[2];
+  int gameAreaHeight = sectionHeights[0] + sectionHeights[1];
 
-  // Make sure the chatBox rect is correctly positioned at the bottom viewport
-  chatBox.setRect(bottomViewport);
+  // Use GAME_VIEW dimensions for logical view size
+  int logicalWidth = GameConfig::GAME_VIEW_WIDTH;
+  int logicalHeight = GameConfig::GAME_VIEW_HEIGHT;
 
-  // Render the combat log (bottom viewport)
+  // Calculate scale to fit in the available space while maintaining aspect
+  // ratio
+  float scaleX = static_cast<float>(GameConfig::SCREEN_WIDTH) / logicalWidth;
+  float scaleY = static_cast<float>(gameAreaHeight) / logicalHeight;
+  float scale = std::min(scaleX, scaleY);
+
+  // Calculate the actual dimensions after scaling
+  int actualWidth = static_cast<int>(logicalWidth * scale);
+  int actualHeight = static_cast<int>(logicalHeight * scale);
+
+  // Center the view horizontally and vertically in the available space
+  int offsetX = (GameConfig::SCREEN_WIDTH - actualWidth) / 2;
+  int offsetY = (gameAreaHeight - actualHeight) / 2; // Center in top two-thirds
+
+  // Create the centered viewport rectangle
+  SDL_Rect centeredRect = {offsetX, offsetY, actualWidth, actualHeight};
+
+  // Log detailed viewport information
+  SDL_Log("DYNAMIC THIRDS: Screen: %dx%d, Game area: %d, Chat: %d, "
+          "View: %dx%d, Scale: %.2f, Rendered at: %dx%d, Position: (%d,%d)",
+          GameConfig::SCREEN_WIDTH, totalHeight, gameAreaHeight, chatBoxHeight,
+          logicalWidth, logicalHeight, scale, actualWidth, actualHeight,
+          offsetX, offsetY);
+
+  // Draw a background for the game view area
+  SDL_SetRenderDrawColor(renderer, 0, 23, 25, 255); // Dark background
+  SDL_RenderFillRect(renderer, &centeredRect);
+
+  // Draw a border around the game view area
+  SDL_SetRenderDrawColor(renderer, 253, 246, 227, 255); // White border
+  SDL_RenderDrawRect(renderer, &centeredRect);
+
+  // Render the map in the centered area using absolute coordinates
+  map.renderCenteredAt(renderer, tiles, offsetX, offsetY, actualWidth,
+                       actualHeight,
+                       player->getPosition().x * GameConfig::TILE_SIZE,
+                       player->getPosition().y * GameConfig::TILE_SIZE);
+
+  // Position the chat box at the bottom of the screen
+  SDL_Rect chatBoxRect = {0, gameAreaHeight, GameConfig::SCREEN_WIDTH,
+                          chatBoxHeight};
+  chatBox.setRect(chatBoxRect);
+
+  // Render the combat log
   chatBox.render(renderer);
 }
 
@@ -334,7 +362,7 @@ void Game::generateDungeon() {
     int startX = floors[0].x + offsetX;
     int startY = floors[0].y + offsetY;
     if (startX >= 0 && startX < 64 && startY >= 0 && startY < 64) {
-      player = {"Player", Position(startX, startY), 100, 5, 204};
+      player->setPosition(Position(startX, startY));
       SDL_Log("Player starting position: %d, %d", startX, startY);
     }
   }
@@ -386,44 +414,12 @@ int Game::glyphToTileID(char c) {
 }
 
 void Game::handleInput(const SDL_Event &event) {
+  // Pass input events to the player
+  player->handleInput(event);
+
+  // Check for quit events
   if (event.type == SDL_KEYDOWN) {
     switch (event.key.keysym.sym) {
-    case SDLK_UP: {
-      int newY = player.pos.y - 1;
-      if (isValidMove(player.pos.x, newY)) {
-        player.pos.y = newY;
-        std::cout << "Player moved to (" << player.pos.x << "," << player.pos.y
-                  << ")" << std::endl;
-      }
-      break;
-    }
-    case SDLK_DOWN: {
-      int newY = player.pos.y + 1;
-      if (isValidMove(player.pos.x, newY)) {
-        player.pos.y = newY;
-        std::cout << "Player moved to (" << player.pos.x << "," << player.pos.y
-                  << ")" << std::endl;
-      }
-      break;
-    }
-    case SDLK_LEFT: {
-      int newX = player.pos.x - 1;
-      if (isValidMove(newX, player.pos.y)) {
-        player.pos.x = newX;
-        std::cout << "Player moved to (" << player.pos.x << "," << player.pos.y
-                  << ")" << std::endl;
-      }
-      break;
-    }
-    case SDLK_RIGHT: {
-      int newX = player.pos.x + 1;
-      if (isValidMove(newX, player.pos.y)) {
-        player.pos.x = newX;
-        std::cout << "Player moved to (" << player.pos.x << "," << player.pos.y
-                  << ")" << std::endl;
-      }
-      break;
-    }
     case SDLK_q:
     case SDLK_ESCAPE:
       // Set running to false to signal to GameManager to exit

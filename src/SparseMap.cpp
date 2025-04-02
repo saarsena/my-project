@@ -2,9 +2,7 @@
 // SparseMap.cpp
 #include "SparseMap.hpp"
 
-void SparseMap::setTile(int x, int y, int tileID) {
-  map[{x, y}] = tileID;
-}
+void SparseMap::setTile(int x, int y, int tileID) { map[{x, y}] = tileID; }
 
 bool SparseMap::hasTile(int x, int y) const {
   return map.find({x, y}) != map.end();

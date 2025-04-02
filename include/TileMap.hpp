@@ -1,8 +1,11 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+
 #include <unordered_map>
 #include <vector>
+
+#include "GameConfig.hpp"
 
 class TileSet;
 
@@ -24,12 +27,25 @@ public:
   void renderCentered(SDL_Renderer *renderer, const TileSet &tiles,
                       SDL_Rect viewport, int playerX, int playerY) const;
 
+  // New method - assumes viewport already set
+  void renderCenteredInViewport(SDL_Renderer *renderer, const TileSet &tiles,
+                                int playerX, int playerY) const;
+
+  // New method - uses absolute positioning with explicit coordinates
+  void renderCenteredAt(SDL_Renderer *renderer, const TileSet &tiles,
+                        int screenX, int screenY, int width, int height,
+                        int playerX, int playerY) const;
+
   int getWidth() const { return width; }
   int getHeight() const { return height; }
 
+  // Convert between pixel and tile coordinates
+  static int pixelToTile(int pixel) { return pixel / GameConfig::TILE_SIZE; }
+  static int tileToPixel(int tile) { return tile * GameConfig::TILE_SIZE; }
+
 private:
-  int width;
-  int height;
+  int width;  // Width in tiles
+  int height; // Height in tiles
   std::vector<std::vector<int>> map;
 
   SDL_Texture *spriteSheet = nullptr;

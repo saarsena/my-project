@@ -1,18 +1,20 @@
 #ifndef TILESET_H
 #define TILESET_H
 
-#include "TileDef.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+
 #include <string>
 #include <unordered_map>
 
+#include "TileDef.hpp"
+
 class TileSet {
-private:
+ private:
   std::unordered_map<int, TileDef> tiles;
   SDL_Texture *spriteSheet = nullptr;
 
-public:
+ public:
   TileSet();
   ~TileSet();
   void loadDefaults();

@@ -1,7 +1,12 @@
 // === GameManager.cpp ===
 #include "GameManager.hpp"
+
 #include <SDL2/SDL_image.h>
+
 #include <iostream>
+#include <memory>
+
+#include "GameConfig.hpp"
 
 GameManager::GameManager()
     : window(nullptr), renderer(nullptr), running(false), cleaned(false) {}
@@ -25,9 +30,10 @@ void GameManager::init() {
     return;
   }
 
-  window = SDL_CreateWindow("Dungeon Crawler", SDL_WINDOWPOS_UNDEFINED,
-                            SDL_WINDOWPOS_UNDEFINED, Game::SCREEN_WIDTH,
-                            Game::SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+  window =
+      SDL_CreateWindow("Tossing Bikes in the River", SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED, GameConfig::SCREEN_WIDTH,
+                       GameConfig::SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 
   if (!window) {
     std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError()

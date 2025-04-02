@@ -1,5 +1,6 @@
 // ActionSchedule.cpp
 #include "ActionSchedule.hpp"
+
 #include <SDL2/SDL.h>
 
 bool ActionSchedule::operator<(const ActionSchedule &a) const {

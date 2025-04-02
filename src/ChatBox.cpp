@@ -1,11 +1,12 @@
 #include "ChatBox.hpp"
-#include "SDL_render.h"
 
 #include <SDL2/SDL_ttf.h>
 
 #include <algorithm>
 #include <iostream>
 #include <string>
+
+#include "SDL_render.h"
 
 ChatBox::ChatBox(int x, int y, int w, int h)
     : rect{x, y, w, h}, messages(), font(nullptr) {
@@ -14,7 +15,6 @@ ChatBox::ChatBox(int x, int y, int w, int h)
 }
 
 ChatBox::~ChatBox() {
-  // Don't free the font here - it should be managed by Game
   std::cout << "ChatBox destroyed, font pointer: " << font << std::endl;
 }
 
@@ -58,19 +58,19 @@ void ChatBox::render(SDL_Renderer *renderer) {
 
   // Draw the chat box background with transparency
   SDL_SetRenderDrawColor(renderer, 0, 43, 54,
-                         180); // Reduced alpha for transparency
+                         160);  // Reduced alpha for transparency
   SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
   SDL_RenderFillRect(renderer, &rect);
 
   // Draw the chat box border
   SDL_SetRenderDrawColor(renderer, 253, 246, 227,
-                         200); // Semi-transparent white border
+                         200);  // Semi-transparent white border
   SDL_RenderDrawRect(renderer, &rect);
 
   // Render chat messages
   int fontHeight = TTF_FontHeight(font);
-  int margin = 10;     // Margin from the edges
-  int lineSpacing = 2; // Space between lines
+  int margin = 10;      // Margin from the edges
+  int lineSpacing = 2;  // Space between lines
 
   // Calculate how many messages can fit in the viewport
   int maxVisibleMessages = (rect.h - 2 * margin) / (fontHeight + lineSpacing);

@@ -1,12 +1,16 @@
 // WalkerDungeon.cpp
 #include "walkerdungeon.hpp"
+
 #include <random>
 
 // Constructor: Initialize parameters and seed the RNG.
 WalkerDungeon::WalkerDungeon(int totalFloorCount, int minHall, int maxHall,
                              int roomDim)
-    : totalFloorCount(totalFloorCount), minHall(minHall), maxHall(maxHall),
-      roomDim(roomDim), rng(std::random_device()()) {}
+    : totalFloorCount(totalFloorCount),
+      minHall(minHall),
+      maxHall(maxHall),
+      roomDim(roomDim),
+      rng(std::random_device()()) {}
 
 // Returns the generated floor positions
 const std::vector<SDL_Point> &WalkerDungeon::GetFloorList() const {
@@ -15,10 +19,9 @@ const std::vector<SDL_Point> &WalkerDungeon::GetFloorList() const {
 
 // Check if the position already exists in the floor list
 bool WalkerDungeon::InFloorList(
-    const SDL_Point &pos) const { // Make this method const
+    const SDL_Point &pos) const {  // Make this method const
   for (const auto &p : floorList) {
-    if (p.x == pos.x && p.y == pos.y)
-      return true;
+    if (p.x == pos.x && p.y == pos.y) return true;
   }
   return false;
 }
@@ -27,16 +30,16 @@ bool WalkerDungeon::InFloorList(
 SDL_Point WalkerDungeon::RandomDirection() {
   int r = std::uniform_int_distribution<int>(1, 4)(rng);
   switch (r) {
-  case 1:
-    return {0, 1}; // Up
-  case 2:
-    return {1, 0}; // Right
-  case 3:
-    return {0, -1}; // Down
-  case 4:
-    return {-1, 0}; // Left
-  default:
-    return {0, 0};
+    case 1:
+      return {0, 1};  // Up
+    case 2:
+      return {1, 0};  // Right
+    case 3:
+      return {0, -1};  // Down
+    case 4:
+      return {-1, 0};  // Left
+    default:
+      return {0, 0};
   }
 }
 
@@ -100,7 +103,7 @@ std::vector<SDL_Point> WalkerDungeon::GetWallList() const {
   for (const auto &p : floorList) {
     for (int i = 0; i < 8; ++i) {
       SDL_Point neighbor = {p.x + dx[i], p.y + dy[i]};
-      if (!InFloorList(neighbor)) { // This call is now valid
+      if (!InFloorList(neighbor)) {  // This call is now valid
         // Avoid duplicates.
         bool alreadyAdded = false;
         for (const auto &wp : wallList) {

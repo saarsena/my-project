@@ -1,9 +1,10 @@
 #pragma once
 #include <SDL2/SDL.h>
+
 #include <string>
 
 class ChatLine {
-public:
+ public:
   std::string text;
   SDL_Color color;
 

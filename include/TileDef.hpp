@@ -2,11 +2,11 @@
 #ifndef TILEDEF_H
 #define TILEDEF_H
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 class TileDef {
-public:
+ public:
   int id;
   int sheetX, sheetY;
   uint8_t flags;

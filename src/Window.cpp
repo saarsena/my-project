@@ -1,9 +1,12 @@
 // Window.cpp
 #include "Window.hpp"
+
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
+
 #include <iostream>
+#include <string>
 
 Window::Window() {}
 Window::~Window() { clean(); }
